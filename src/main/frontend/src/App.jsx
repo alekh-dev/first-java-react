@@ -1,44 +1,55 @@
 import { useEffect, useState } from 'react'
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
-import Navbar from './component/navbar'
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import Footer from './component/footer'
-import Home from './pages/Home'
+import Navbar from './component/navbar'
 import Dashboard from './pages/Dashboard'
+import Home from './pages/Home'
+import Settings from './pages/Settings'
 
 function App() {
-  const [backendMessage, setBackendMessage] = useState('Connecting to Java backend...')
+  const [backendMessage, setBackendMessage] = useState('Connecting to Java backend')
+  const [backendAvailable, setBackendAvailable] = useState(false)
 
   useEffect(() => {
     fetch('/api/data')
-      .then((response) => response.text())
-      .then((data) => setBackendMessage(data))
-      .catch((error) => setBackendMessage('Failed to connect to backend.'))
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`Backend returned ${response.status}`)
+        }
+        return response.text()
+      })
+      .then((message) => {
+        setBackendMessage(message)
+        setBackendAvailable(true)
+      })
+      .catch(() => {
+        setBackendMessage('Backend is currently unavailable')
+        setBackendAvailable(false)
+      })
   }, [])
 
   return (
-    <Router>
-      <div style={{ margin: 0, padding: 0, minHeight: '100vh', position: 'relative' }}>
+    <BrowserRouter>
+      <div className="flex min-h-screen flex-col bg-mist text-slate-800">
         <Navbar />
-
-        {/* Dynamic Rendering Content Window Slot */}
-        <div style={{ textAlign: 'center', marginTop: '40px', paddingBottom: '120px', fontFamily: 'sans-serif' }}>
-
+        <div className="flex min-h-11 w-full min-w-0 items-center justify-center gap-3 border-b border-forest-100 bg-forest-50 px-4 text-xs text-slate-600" role="status">
+          <span className={`h-2 w-2 shrink-0 rounded-full ring-4 ${backendAvailable ? 'bg-emerald-600 ring-emerald-100' : 'bg-amber-500 ring-amber-100'}`} />
+          <span className="flex min-w-0 items-center gap-2">
+            <strong className="shrink-0 font-semibold text-slate-700">Java API</strong>
+            <span className="min-w-0 truncate">{backendMessage}</span>
+          </span>
+        </div>
+        <main className="w-full flex-1">
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
-
-          {/* Persistent Shared Java Backend Component */}
-          <div style={{ padding: '20px', backgroundColor: '#f8f9fa', display: 'inline-block', borderRadius: '8px', border: '1px solid #e2e8f0', marginTop: '40px' }}>
-            <p style={{ fontSize: '18px', color: '#007bff', fontWeight: 'bold', margin: 0 }}>
-              Backend Status: {backendMessage}
-            </p>
-          </div>
-        </div>
-
+        </main>
         <Footer />
       </div>
-    </Router>
+    </BrowserRouter>
   )
 }
 
